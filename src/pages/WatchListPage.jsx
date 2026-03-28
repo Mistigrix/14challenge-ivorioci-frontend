@@ -12,7 +12,7 @@ export default function WatchListPage() {
   const listVideos = videos.filter(v => watchList.includes(v.id));
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 32px 40px' }}>
+    <div className="page-container" style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 32px 40px' }}>
 
       {/* ——— Header ——— */}
       <h1 style={{
@@ -35,7 +35,7 @@ export default function WatchListPage() {
           </p>
         </div>
       ) : (
-        <div style={{
+        <div className="video-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
           gap: 20,

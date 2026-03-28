@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useVideoStore } from '../store/useVideoStore';
+import { PlayIcon, StarIcon, CheckIcon } from './Icons';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -35,7 +36,7 @@ export default function VideoCard({ video, size = 'medium' }) {
   const { w, h } = dimensions[size] || dimensions.medium;
 
   return (
-    <div style={{ width: w, flexShrink: 0, cursor: 'pointer' }}
+    <div style={{ width: w, minWidth: 0, flexShrink: 0, cursor: 'pointer' }}
       onClick={() => navigate(`/player/${video.id}`)}>
 
       {/* ——— Thumbnail ——— */}
@@ -66,11 +67,12 @@ export default function VideoCard({ video, size = 'medium' }) {
             width: 48, height: 48, borderRadius: '50%',
             background: 'rgba(255,255,255,0.9)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 20, color: '#0A0A0E',
-          }}>▶</div>
+          }}>
+            <PlayIcon size={20} color="#0A0A0E" />
+          </div>
         </div>
 
-        {/* Durée */}
+        {/* Duree */}
         <span style={{
           position: 'absolute', bottom: 8, right: 8,
           background: 'rgba(0,0,0,0.7)', borderRadius: 4,
@@ -105,7 +107,10 @@ export default function VideoCard({ video, size = 'medium' }) {
             position: 'absolute', top: 8, right: 8,
             background: CI_G, borderRadius: 4,
             padding: '2px 6px', fontSize: 9, color: '#FFF', fontWeight: 600,
-          }}>✓ Vu</div>
+            display: 'flex', alignItems: 'center', gap: 3,
+          }}>
+            <CheckIcon size={10} color="#FFF" /> Vu
+          </div>
         )}
 
         {/* Titre dans thumbnail */}
@@ -142,11 +147,10 @@ export default function VideoCard({ video, size = 'medium' }) {
           onClick={(e) => { e.stopPropagation(); toggleWatchList(video.id); }}
           style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 16, color: isInList ? CI_O : TEXT_DIM,
-            padding: 4, transition: 'all 0.2s',
+            padding: 4, transition: 'all 0.2s', display: 'flex',
           }}
           title={isInList ? 'Retirer de la liste' : 'À regarder plus tard'}>
-          {isInList ? '★' : '☆'}
+          <StarIcon size={18} color={isInList ? CI_O : TEXT_DIM} filled={isInList} />
         </button>
       </div>
     </div>

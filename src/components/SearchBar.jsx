@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSearch } from '../hooks/useSearch';
 import { fmtDuration, getCoverGradient } from './VideoCard';
+import { SearchIcon, CloseIcon, ClockIcon, PlayIcon, ArrowRightIcon } from './Icons';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -67,14 +68,14 @@ export default function SearchBar() {
     <div style={{ position: 'relative' }}>
 
       {/* ——— Input ——— */}
-      <div style={{
+      <div className="search-input-wrapper" style={{
         display: 'flex', alignItems: 'center', gap: 8,
         background: CARD, borderRadius: 10,
         border: `1px solid ${isOpen ? CI_O : BORDER}`,
-        padding: '6px 12px', width: 260,
+        padding: '6px 12px', width: 220,
         transition: 'border 0.2s',
       }}>
-        <span style={{ fontSize: 13, color: TEXT_DIM }}>🔍</span>
+        <SearchIcon size={14} color={TEXT_DIM} />
         <input
           ref={inputRef}
           type="text"
@@ -86,6 +87,7 @@ export default function SearchBar() {
           style={{
             flex: 1, background: 'none', border: 'none',
             outline: 'none', color: TEXT_P, fontSize: 12,
+            minWidth: 0,
           }}
         />
         {query && (
@@ -93,8 +95,10 @@ export default function SearchBar() {
             onClick={() => { setQuery(''); setIsOpen(true); inputRef.current?.focus(); }}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: TEXT_DIM, fontSize: 14, padding: 0,
-            }}>✕</button>
+              color: TEXT_DIM, padding: 0, display: 'flex',
+            }}>
+            <CloseIcon size={14} color={TEXT_DIM} />
+          </button>
         )}
       </div>
 
@@ -102,6 +106,7 @@ export default function SearchBar() {
       {showDropdown && (
         <div
           ref={dropdownRef}
+          className="search-dropdown"
           style={{
             position: 'absolute', top: 'calc(100% + 8px)', right: 0,
             width: 380, background: CARD,
@@ -110,7 +115,7 @@ export default function SearchBar() {
             maxHeight: 480, overflowY: 'auto', zIndex: 9999,
           }}>
 
-          {/* ——— Recherches récentes ——— */}
+          {/* ——— Recherches recentes ——— */}
           {query.length === 0 && recentSearches.length > 0 && (
             <div style={{ marginBottom: 12 }}>
               <div style={{
@@ -138,7 +143,7 @@ export default function SearchBar() {
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <span style={{ fontSize: 13, color: TEXT_DIM }}>🕐</span>
+                  <ClockIcon size={14} color={TEXT_DIM} />
                   <span
                     onClick={() => applySearch(s)}
                     style={{
@@ -148,8 +153,10 @@ export default function SearchBar() {
                     onClick={(e) => { e.stopPropagation(); removeRecentSearch(s); }}
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      color: TEXT_DIM, fontSize: 12, padding: 0,
-                    }}>✕</button>
+                      color: TEXT_DIM, padding: 0, display: 'flex',
+                    }}>
+                    <CloseIcon size={12} color={TEXT_DIM} />
+                  </button>
                 </div>
               ))}
             </div>
@@ -173,10 +180,9 @@ export default function SearchBar() {
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <span style={{ fontSize: 13 }}>{s.icon}</span>
+                  <SearchIcon size={13} color={TEXT_DIM} />
                   <div style={{ flex: 1 }}>
                     <span style={{ fontSize: 12, color: TEXT_P }}>
-                      {/* Highlight la partie recherchée */}
                       {s.label.toLowerCase().includes(query.toLowerCase()) ? (
                         <>
                           {s.label.substring(0, s.label.toLowerCase().indexOf(query.toLowerCase()))}
@@ -197,13 +203,13 @@ export default function SearchBar() {
                       textTransform: 'uppercase', letterSpacing: 0.5,
                     }}>{s.type === 'title' ? 'Film' : s.type === 'genre' ? 'Genre' : s.type === 'director' ? 'Réalisateur' : 'Acteur'}</span>
                   </div>
-                  <span style={{ fontSize: 10, color: TEXT_DIM }}>→</span>
+                  <ArrowRightIcon size={12} color={TEXT_DIM} />
                 </div>
               ))}
             </div>
           )}
 
-          {/* ——— Résultats vidéos ——— */}
+          {/* ——— Resultats videos ——— */}
           {query.length >= 2 && results.length > 0 && (
             <div>
               <p style={{
@@ -227,8 +233,9 @@ export default function SearchBar() {
                     width: 80, height: 45, borderRadius: 8, flexShrink: 0,
                     background: getCoverGradient(v.title),
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 16,
-                  }}>▶</div>
+                  }}>
+                    <PlayIcon size={16} color="rgba(255,255,255,0.8)" />
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{
                       fontSize: 12, fontWeight: 600, color: TEXT_P,
@@ -252,10 +259,12 @@ export default function SearchBar() {
             </div>
           )}
 
-          {/* ——— Aucun résultat ——— */}
+          {/* ——— Aucun resultat ——— */}
           {query.length >= 2 && results.length === 0 && suggestions.length === 0 && (
             <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <span style={{ fontSize: 32, display: 'block', marginBottom: 8 }}>🔍</span>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <SearchIcon size={32} color={TEXT_DIM} />
+              </div>
               <p style={{ fontSize: 12, color: TEXT_S, margin: 0 }}>
                 Aucun résultat pour "<span style={{ color: CI_O }}>{query}</span>"
               </p>

@@ -17,3 +17,47 @@ body {
   margin: 0;
 }
 
+/* ——— Animation de transition entre pages ——— */
+.page-transition {
+  animation: fadeIn 0.3s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ——— Theme clair ——— */
+.light-theme body,
+.light-theme {
+  background: #F5F3EE !important;
+  color: #1A1A22 !important;
+}
+.light-theme nav {
+  background: rgba(245,243,238,0.92) !important;
+  border-bottom-color: #E0DDD6 !important;
+}
+.light-theme ::-webkit-scrollbar-thumb {
+  background: #FF8C0050;
+}
+
+/* ——— Responsive utilitaires ——— */
+@media (max-width: 768px) {
+  .nav-links-desktop { display: none !important; }
+  .hamburger-btn { display: flex !important; }
+  .hero-content { bottom: 32px !important; left: 20px !important; right: 20px !important; }
+  .hero-title { font-size: 26px !important; }
+  .hero-meta { display: none !important; }
+  .hero-buttons { flex-wrap: wrap; }
+  .page-container { padding-left: 16px !important; padding-right: 16px !important; }
+  .filters-grid { grid-template-columns: 1fr !important; }
+  .filter-tags { flex-wrap: wrap; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .about-grid { grid-template-columns: 1fr !important; }
+  .player-controls-right { gap: 8px !important; }
+  .player-time { display: none !important; }
+  .info-section { padding-left: 16px !important; padding-right: 16px !important; }
+  .video-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important; }
+  .search-dropdown { width: calc(100vw - 32px) !important; right: -60px !important; }
+  .search-input-wrapper { width: 140px !important; }
+}
+

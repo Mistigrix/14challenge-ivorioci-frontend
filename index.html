@@ -4,9 +4,51 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ivorioci-frontend</title>
+    <title>IvorioCI</title>
+    <style>
+      /* Loader global affiché avant le montage React */
+      #global-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #0A0A0E;
+        z-index: 9999;
+        transition: opacity 0.4s ease;
+      }
+      #global-loader.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #global-loader .logo {
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        color: #F0EDE6;
+        margin-bottom: 32px;
+      }
+      #global-loader .logo span { color: #FF8C00; }
+      #global-loader .spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top-color: #FF8C00;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <!-- Loader visible pendant le chargement de React -->
+    <div id="global-loader">
+      <div class="logo">IVORIO<span>CI</span></div>
+      <div class="spinner"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

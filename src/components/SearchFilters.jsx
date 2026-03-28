@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { videos } from '../data/mockData';
+import { FilterIcon, CloseIcon, ChevronUpIcon, ChevronDownIcon } from './Icons';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -56,7 +57,7 @@ export default function SearchFilters({ onFilterChange }) {
     <div style={{ marginBottom: 24 }}>
 
       {/* ——— Bouton toggle filtres ——— */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <div className="filter-tags" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           style={{
@@ -67,7 +68,7 @@ export default function SearchFilters({ onFilterChange }) {
             color: hasActiveFilters ? CI_O : TEXT_S,
             fontSize: 12, fontWeight: 500, transition: 'all 0.2s',
           }}>
-          <span>⚙️</span>
+          <FilterIcon size={14} color={hasActiveFilters ? CI_O : TEXT_S} />
           Filtres
           {hasActiveFilters && (
             <span style={{
@@ -80,7 +81,7 @@ export default function SearchFilters({ onFilterChange }) {
                 .filter(Boolean).length}
             </span>
           )}
-          <span style={{ fontSize: 10 }}>{isOpen ? '▲' : '▼'}</span>
+          {isOpen ? <ChevronUpIcon size={12} /> : <ChevronDownIcon size={12} />}
         </button>
 
         {/* Tags filtres actifs */}
@@ -96,8 +97,8 @@ export default function SearchFilters({ onFilterChange }) {
               onClick={() => handleGenre('Tous')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: CI_O, fontSize: 12, padding: 0, lineHeight: 1,
-              }}>✕</button>
+                padding: 0, lineHeight: 1, display: 'flex',
+              }}><CloseIcon size={12} color={CI_O} /></button>
           </div>
         )}
         {selectedYear !== 'Toutes' && (
@@ -112,8 +113,8 @@ export default function SearchFilters({ onFilterChange }) {
               onClick={() => handleYear('Toutes')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: CI_G, fontSize: 12, padding: 0, lineHeight: 1,
-              }}>✕</button>
+                padding: 0, lineHeight: 1, display: 'flex',
+              }}><CloseIcon size={12} color={CI_G} /></button>
           </div>
         )}
         {selectedRating !== 'Tous' && (
@@ -128,8 +129,8 @@ export default function SearchFilters({ onFilterChange }) {
               onClick={() => handleRating('Tous')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#E53935', fontSize: 12, padding: 0, lineHeight: 1,
-              }}>✕</button>
+                padding: 0, lineHeight: 1, display: 'flex',
+              }}><CloseIcon size={12} color="#E53935" /></button>
           </div>
         )}
 
@@ -153,7 +154,7 @@ export default function SearchFilters({ onFilterChange }) {
           border: `1px solid ${BORDER}`, padding: 24,
           marginBottom: 16, transition: 'all 0.3s',
         }}>
-          <div style={{
+          <div className="filters-grid" style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
             gap: 24,
           }}>

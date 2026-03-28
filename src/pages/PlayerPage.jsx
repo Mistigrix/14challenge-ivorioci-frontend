@@ -4,6 +4,7 @@ import { usePlayerStore } from '../store/usePlayerStore';
 import { useVideoStore } from '../store/useVideoStore';
 import { videos } from '../data/mockData';
 import VideoCard, { getCoverGradient, fmtDuration } from '../components/VideoCard';
+import { PlayIcon, PauseIcon, SkipBackIcon, SkipForwardIcon, FullscreenIcon, StarIcon, FilmIcon } from '../components/Icons';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -35,7 +36,7 @@ export default function PlayerPage() {
 
   const video = videos.find(v => v.id === Number(id));
 
-  // ——— Charge la vidéo au montage ———
+  // ——— Charge la video au montage ———
   useEffect(() => {
     if (video) setVideo(video);
   }, [id]);
@@ -63,7 +64,7 @@ export default function PlayerPage() {
         justifyContent: 'center', minHeight: '80vh',
         flexDirection: 'column', gap: 16,
       }}>
-        <span style={{ fontSize: 48 }}>🎬</span>
+        <FilmIcon size={48} color={TEXT_DIM} />
         <p style={{ color: TEXT_S, fontSize: 14 }}>Vidéo introuvable</p>
         <button
           onClick={() => navigate('/')}
@@ -84,6 +85,8 @@ export default function PlayerPage() {
     .filter(v => v.id !== video.id && v.genres.some(g => video.genres.includes(g)))
     .slice(0, 4);
 
+  const isInList = watchList.includes(video.id);
+
   return (
     <div style={{ paddingTop: 56 }}>
 
@@ -93,20 +96,19 @@ export default function PlayerPage() {
         background: '#000', position: 'relative', overflow: 'hidden',
       }}>
 
-        {/* Fond simulé */}
+        {/* Fond simule */}
         <div style={{
           width: '100%', height: '100%',
           background: getCoverGradient(video.title),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <span style={{
-            fontSize: 64,
-            opacity: isPlaying ? 0.2 : 0.5,
-            transition: 'opacity 0.3s',
-          }}>🎬</span>
+          <FilmIcon
+            size={64}
+            color={`rgba(255,255,255,${isPlaying ? 0.15 : 0.4})`}
+          />
         </div>
 
-        {/* ——— Contrôles ——— */}
+        {/* ——— Controles ——— */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%)',
@@ -137,7 +139,7 @@ export default function PlayerPage() {
             }} />
           </div>
 
-          {/* Boutons contrôles */}
+          {/* Boutons controles */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
@@ -148,19 +150,26 @@ export default function PlayerPage() {
                 onClick={togglePlay}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  color: '#FFF', fontSize: 22, padding: 4,
+                  color: '#FFF', padding: 4, display: 'flex',
                 }}>
-                {isPlaying ? '⏸' : '▶'}
+                {isPlaying
+                  ? <PauseIcon size={22} color="#FFF" />
+                  : <PlayIcon size={22} color="#FFF" />
+                }
               </button>
               <button style={{
                 background: 'none', border: 'none',
-                cursor: 'pointer', color: '#FFF', fontSize: 16,
-              }}>⏮</button>
+                cursor: 'pointer', padding: 4, display: 'flex',
+              }}>
+                <SkipBackIcon size={18} color="#FFF" />
+              </button>
               <button style={{
                 background: 'none', border: 'none',
-                cursor: 'pointer', color: '#FFF', fontSize: 16,
-              }}>⏭</button>
-              <span style={{
+                cursor: 'pointer', padding: 4, display: 'flex',
+              }}>
+                <SkipForwardIcon size={18} color="#FFF" />
+              </button>
+              <span className="player-time" style={{
                 fontSize: 12, color: 'rgba(255,255,255,0.7)',
               }}>
                 {fmtTime(playerTime)} / {fmtTime(video.duration)}
@@ -168,7 +177,7 @@ export default function PlayerPage() {
             </div>
 
             {/* Droite */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="player-controls-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
               {/* Vitesse */}
               <select
@@ -184,7 +193,7 @@ export default function PlayerPage() {
                 ))}
               </select>
 
-              {/* Qualité */}
+              {/* Qualite */}
               <select
                 value={playerQuality}
                 onChange={e => setQuality(e.target.value)}
@@ -198,19 +207,21 @@ export default function PlayerPage() {
                 ))}
               </select>
 
-              {/* Plein écran */}
+              {/* Plein ecran */}
               <button style={{
                 background: 'none', border: 'none',
-                cursor: 'pointer', color: '#FFF', fontSize: 16,
-              }}>⊞</button>
+                cursor: 'pointer', padding: 4, display: 'flex',
+              }}>
+                <FullscreenIcon size={18} color="#FFF" />
+              </button>
 
             </div>
           </div>
         </div>
       </div>
 
-      {/* ——— Infos vidéo ——— */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px 40px' }}>
+      {/* ——— Infos video ——— */}
+      <div className="info-section page-container" style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 32px 40px' }}>
         <div style={{ display: 'flex', gap: 32 }}>
           <div style={{ flex: 1 }}>
 
@@ -251,15 +262,16 @@ export default function PlayerPage() {
                 style={{
                   padding: '8px 20px', borderRadius: 10, cursor: 'pointer',
                   border: `1px solid ${BORDER}`,
-                  background: watchList.includes(video.id) ? `${CI_O}15` : 'transparent',
-                  color: watchList.includes(video.id) ? CI_O : TEXT_S,
-                  fontSize: 12,
+                  background: isInList ? `${CI_O}15` : 'transparent',
+                  color: isInList ? CI_O : TEXT_S,
+                  fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
                 }}>
-                {watchList.includes(video.id) ? '★ Dans ma liste' : '☆ Ajouter à ma liste'}
+                <StarIcon size={14} color={isInList ? CI_O : TEXT_S} filled={isInList} />
+                {isInList ? 'Dans ma liste' : 'Ajouter à ma liste'}
               </button>
             </div>
 
-            {/* Détails */}
+            {/* Details */}
             <div style={{
               marginTop: 24, paddingTop: 16,
               borderTop: `1px solid ${BORDER}`,
@@ -276,7 +288,7 @@ export default function PlayerPage() {
           </div>
         </div>
 
-        {/* ——— Vidéos similaires ——— */}
+        {/* ——— Videos similaires ——— */}
         {similarVideos.length > 0 && (
           <div style={{ marginTop: 40 }}>
             <h2 style={{

@@ -35,12 +35,12 @@ const getInitials = (name) =>
 
 export default function AboutPage() {
   return (
-    <div style={{ maxWidth: 700, margin: '0 auto', padding: '88px 32px 40px' }}>
+    <div className="page-container" style={{ maxWidth: 700, margin: '0 auto', padding: '88px 32px 40px' }}>
 
       {/* ——— Description ——— */}
       <div style={{
         background: CARD, borderRadius: 20,
-        border: `1px solid ${BORDER}`, padding: 36, marginBottom: 24,
+        border: `1px solid ${BORDER}`, padding: '36px 24px', marginBottom: 24,
       }}>
         <div style={{
           display: 'flex', width: 56, height: 35, borderRadius: 6,
@@ -68,7 +68,7 @@ export default function AboutPage() {
       </div>
 
       {/* ——— Stats ——— */}
-      <div style={{
+      <div className="stats-grid" style={{
         display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 12, marginBottom: 24,
       }}>
@@ -86,7 +86,7 @@ export default function AboutPage() {
       </div>
 
       {/* ——— Équipe + Stack ——— */}
-      <div style={{
+      <div className="about-grid" style={{
         display: 'grid', gridTemplateColumns: '1fr 1fr',
         gap: 16, marginBottom: 24,
       }}>

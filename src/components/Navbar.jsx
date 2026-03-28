@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { profiles } from '../data/mockData';
 import SearchBar from './SearchBar';
+import { MenuIcon, CloseIcon } from './Icons';
+import ThemeToggle from './ThemeToggle';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -40,7 +42,7 @@ export default function Navbar() {
     <>
       <nav style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
-        padding: '0 32px', height: 56,
+        padding: '0 16px', height: 56,
         background: 'rgba(10,10,14,0.92)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
@@ -49,46 +51,50 @@ export default function Navbar() {
         <div style={{
           maxWidth: 1200, margin: '0 auto',
           display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center', height: '100%',
+          alignItems: 'center', height: '100%', position: 'relative',
         }}>
 
-          {/* ——— Logo ——— */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <div
-              style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-              onClick={() => navigate('/home')}>
-              <FlagBar />
-              <span style={{
-                fontSize: 18, fontWeight: 800, color: TEXT_P, letterSpacing: -0.5,
-              }}>
-                Ivorio<span style={{ color: CI_O }}>CI</span>
-              </span>
-            </div>
+          {/* ——— Logo (gauche) ——— */}
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}
+            onClick={() => navigate('/home')}>
+            <FlagBar />
+            <span style={{
+              fontSize: 18, fontWeight: 800, color: TEXT_P, letterSpacing: -0.5,
+            }}>
+              Ivorio<span style={{ color: CI_O }}>CI</span>
+            </span>
+          </div>
 
-            {/* ——— Nav links desktop ——— */}
-            <div
-              className="nav-links-desktop"
-              style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-              {navLinks.map(n => (
-                <Link key={n.path} to={n.path}
-                  style={{
-                    fontSize: 12,
-                    fontWeight: location.pathname === n.path ? 700 : 400,
-                    color: location.pathname === n.path ? CI_O : TEXT_S,
-                    textDecoration: 'none',
-                    transition: 'all 0.2s',
-                  }}>
-                  {n.label}
-                </Link>
-              ))}
-            </div>
+          {/* ——— Nav links centré ——— */}
+          <div
+            className="nav-links-desktop"
+            style={{
+              display: 'flex', gap: 24, alignItems: 'center',
+              position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+            }}>
+            {navLinks.map(n => (
+              <Link key={n.path} to={n.path}
+                style={{
+                  fontSize: 12,
+                  fontWeight: location.pathname === n.path ? 700 : 400,
+                  color: location.pathname === n.path ? CI_O : TEXT_S,
+                  textDecoration: 'none',
+                  transition: 'all 0.2s',
+                }}>
+                {n.label}
+              </Link>
+            ))}
           </div>
 
           {/* ——— Droite ——— */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
-            {/* ——— SearchBar avec suggestions + récents ——— */}
+            {/* ——— SearchBar toujours visible ——— */}
             <SearchBar />
+
+            {/* ——— Toggle theme sombre/clair ——— */}
+            <ThemeToggle />
 
             {/* ——— Profil ——— */}
             <div style={{ position: 'relative' }}>
@@ -151,7 +157,7 @@ export default function Navbar() {
                           fontSize: 12, fontWeight: 600, color: TEXT_P, margin: 0,
                         }}>{p.name}</p>
                         {p.isKid && (
-                          <span style={{ fontSize: 9, color: CI_G }}>👶 Enfant</span>
+                          <span style={{ fontSize: 9, color: CI_G }}>Enfant</span>
                         )}
                       </div>
                     </div>
@@ -169,16 +175,16 @@ export default function Navbar() {
                 background: 'none',
                 border: `1px solid ${BORDER}`,
                 color: TEXT_P, width: 34, height: 34,
-                borderRadius: 8, fontSize: 16, cursor: 'pointer',
+                borderRadius: 8, cursor: 'pointer',
                 alignItems: 'center', justifyContent: 'center',
               }}>
-              {menuOpen ? '✕' : '☰'}
+              {menuOpen ? <CloseIcon size={18} color={TEXT_P} /> : <MenuIcon size={18} color={TEXT_P} />}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ——— Menu mobile ——— */}
+      {/* ——— Menu mobile (sans SearchBar) ——— */}
       {menuOpen && (
         <div style={{
           position: 'fixed', top: 56, left: 0, right: 0, zIndex: 999,
@@ -201,21 +207,8 @@ export default function Navbar() {
               {n.label}
             </Link>
           ))}
-
-          {/* SearchBar mobile */}
-          <div style={{ marginTop: 8 }}>
-            <SearchBar />
-          </div>
         </div>
       )}
-
-      {/* ——— Style responsive ——— */}
-      <style>{`
-        @media (max-width: 768px) {
-          .nav-links-desktop { display: none !important; }
-          .hamburger-btn { display: flex !important; }
-        }
-      `}</style>
     </>
   );
 }

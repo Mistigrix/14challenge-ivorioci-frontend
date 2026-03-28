@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { videos } from '../data/mockData';
+import { useToastStore } from '../components/Toast';
 
 export const useVideoStore = create((set, get) => ({
   videos,
@@ -12,11 +13,25 @@ export const useVideoStore = create((set, get) => ({
   ],
   selectedGenreFilter: 'Tous',
 
-  toggleWatchList: (videoId) => set((state) => ({
-    watchList: state.watchList.includes(videoId)
-      ? state.watchList.filter(id => id !== videoId)
-      : [...state.watchList, videoId],
-  })),
+  toggleWatchList: (videoId) => {
+    const isInList = get().watchList.includes(videoId);
+    const video = get().videos.find(v => v.id === videoId);
+    const title = video ? video.title : 'Vidéo';
+
+    set((state) => ({
+      watchList: isInList
+        ? state.watchList.filter(id => id !== videoId)
+        : [...state.watchList, videoId],
+    }));
+
+    // Notification toast
+    const { showToast } = useToastStore.getState();
+    if (isInList) {
+      showToast(`${title} retiré de ma liste`, 'info');
+    } else {
+      showToast(`${title} ajouté à ma liste`, 'success');
+    }
+  },
 
   setGenreFilter: (genre) => set({ selectedGenreFilter: genre }),
 
