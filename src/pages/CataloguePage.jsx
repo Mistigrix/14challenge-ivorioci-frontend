@@ -1,38 +1,77 @@
-import { useState } from 'react';
-import { useVideoStore } from '../store/useVideoStore';
-import { videos } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { videos, categoriesData } from '../data/mockData';
 import VideoCard from '../components/VideoCard';
 import SearchFilters from '../components/SearchFilters';
 import { filterVideos } from '../utils/filterVideos';
 
+const CI_O = '#FF8C00';
+const BORDER = '#2A2A35';
 const TEXT_P = '#F0EDE6';
 const TEXT_S = '#777';
 const TEXT_DIM = '#444';
 const CARD = '#1A1A22';
-const BORDER = '#2A2A35';
 
 export default function CataloguePage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const categoryParam = searchParams.get('category');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilters, setActiveFilters] = useState({
     genre: 'Tous', year: 'Toutes', rating: 'Tous',
   });
 
-  const filtered = filterVideos(videos, searchQuery, activeFilters);
+  // ——— Reset quand la catégorie change ———
+  useEffect(() => {
+    setSearchQuery('');
+    setActiveFilters({ genre: 'Tous', year: 'Toutes', rating: 'Tous' });
+  }, [categoryParam]);
+
+  // ——— Catégorie active ———
+  const activeCategory = categoryParam
+    ? categoriesData.find(c => c.id === categoryParam)
+    : null;
+
+  // ——— Filtre par catégorie si param présent ———
+  const baseVideos = categoryParam
+    ? videos.filter(v => v.category === categoryParam)
+    : videos;
+
+  const filtered = filterVideos(baseVideos, searchQuery, activeFilters);
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 32px 40px' }}>
 
       {/* ——— Header ——— */}
-      <h1 style={{
-        fontSize: 32, fontWeight: 800, color: TEXT_P,
-        margin: '0 0 8px', letterSpacing: -1,
-      }}>Catalogue</h1>
-      <p style={{ fontSize: 14, color: TEXT_S, margin: '0 0 24px' }}>
-        {filtered.length} vidéo{filtered.length > 1 ? 's' : ''} trouvée{filtered.length > 1 ? 's' : ''}
-        {videos.length !== filtered.length && (
-          <span style={{ color: TEXT_DIM }}> sur {videos.length}</span>
-        )}
-      </p>
+      <div style={{ marginBottom: 8 }}>
+        <h1 style={{
+          fontSize: 32, fontWeight: 800, color: TEXT_P,
+          margin: '0 0 4px', letterSpacing: -1,
+        }}>
+          {activeCategory
+            ? `${activeCategory.icon} ${activeCategory.name}`
+            : 'Catalogue'
+          }
+        </h1>
+        <p style={{ fontSize: 14, color: TEXT_S, margin: '0 0 24px' }}>
+          {filtered.length} vidéo{filtered.length > 1 ? 's' : ''} trouvée{filtered.length > 1 ? 's' : ''}
+          {baseVideos.length !== filtered.length && (
+            <span style={{ color: TEXT_DIM }}> sur {baseVideos.length}</span>
+          )}
+          {/* ——— Lien retour catalogue complet ——— */}
+          {activeCategory && (
+            <span
+              onClick={() => navigate('/catalogue')}
+              style={{
+                marginLeft: 12, fontSize: 11, color: CI_O,
+                cursor: 'pointer', textDecoration: 'underline',
+              }}>
+              ← Voir tout le catalogue
+            </span>
+          )}
+        </p>
+      </div>
 
       {/* ——— Barre de recherche ——— */}
       <div style={{
@@ -44,7 +83,10 @@ export default function CataloguePage() {
         <span style={{ fontSize: 16, color: TEXT_DIM }}>🔍</span>
         <input
           type="text"
-          placeholder="Rechercher un titre, réalisateur, acteur..."
+          placeholder={activeCategory
+            ? `Rechercher dans ${activeCategory.name}...`
+            : 'Rechercher un titre, réalisateur, acteur...'
+          }
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           style={{
@@ -81,7 +123,6 @@ export default function CataloguePage() {
           </p>
         </div>
       ) : (
-        /* ——— Grille ——— */
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',

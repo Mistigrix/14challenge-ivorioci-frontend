@@ -29,8 +29,10 @@ export default function CategoryRow({ category }) {
             color: TEXT_DIM, fontWeight: 400, fontSize: 12, marginLeft: 8,
           }}>{catVideos.length}</span>
         </h2>
+
+        {/* ——— Voir tout → navigue vers /catalogue?category=id ——— */}
         <span
-          onClick={() => navigate('/catalogue')}
+          onClick={() => navigate(`/catalogue?category=${category.id}`)}
           style={{
             fontSize: 11, color: CI_O, cursor: 'pointer', fontWeight: 500,
           }}>
