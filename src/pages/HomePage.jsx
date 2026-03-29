@@ -1,3 +1,4 @@
+// pages/HomePage.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useVideoStore } from "../store/useVideoStore";
@@ -11,113 +12,157 @@ const CI_O = "#FF8C00";
 const TEXT_P = "#F0EDE6";
 const TEXT_S = "#777777";
 
+// Composant pour charger la thumbnail du hero
+function HeroThumbnail({ thumbnailUrl, title }) {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadThumbnail = async () => {
+      if (!thumbnailUrl) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const url = catalogueService.getThumbnailUrl(thumbnailUrl);
+        console.log('[HeroThumbnail] Chargement:', url);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
+        
+      } catch (err) {
+        console.error('[HeroThumbnail] ❌ Erreur:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadThumbnail();
+
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [thumbnailUrl]);
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={title}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+        }}
+      />
+    );
+  }
+
+  return null;
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
-  const { watchList, toggleWatchList, videos: storeVideos, loadVideos } = useVideoStore();
+  const { watchList, toggleWatchList, loadVideos } = useVideoStore();
 
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [heroVideo, setHeroVideo] = useState(null);
+  const [heroImageUrl, setHeroImageUrl] = useState(null);
 
   const isInList = heroVideo ? watchList.includes(heroVideo.id) : false;
 
-  // useEffect(() => {
-  //   const init = async () => {
-  //     setIsLoading(true);
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
       
-  //     try {
-  //       console.log('[HomePage] Initialisation...');
+      try {
+        console.log('[HomePage] Initialisation...');
         
-  //       // 1. Charger les vidéos via le store
-  //       let videos = storeVideos;
-  //       if (!videos || videos.length === 0) {
-  //         console.log('[HomePage] Chargement des vidéos via le store...');
-  //         await loadVideos();
-  //         videos = useVideoStore.getState().videos;
-  //       }
+        // Forcer le chargement des vidéos depuis l'API
+        const loadedVideos = await loadVideos();
+        console.log('[HomePage] Vidéos chargées:', loadedVideos?.length || 0);
         
-  //       console.log('[HomePage] Vidéos disponibles:', videos?.length || 0);
-  //       if (videos && videos.length > 0) {
-  //         console.log('[HomePage] Première vidéo:', videos[0].title);
-  //         console.log('[HomePage] categoryId de la première vidéo:', videos[0].categoryId);
-  //       }
-        
-  //       // 2. Charger les catégories depuis l'API
-  //       try {
-  //         const categoriesRes = await catalogueService.getCategories();
+        if (loadedVideos && loadedVideos.length > 0) {
+          const firstVideo = loadedVideos[0];
+          console.log('[HomePage] Première vidéo:', {
+            title: firstVideo.title,
+            categoryId: firstVideo.categoryId,
+            thumbnailUrl: firstVideo.thumbnailUrl
+          });
+          setHeroVideo(firstVideo);
           
-  //         // Extraire les catégories du format {success: true, data: [...]}
-  //         let categoriesData = [];
-  //         if (categoriesRes?.data?.data && Array.isArray(categoriesRes.data.data)) {
-  //           categoriesData = categoriesRes.data.data;
-  //         } else if (categoriesRes?.data && Array.isArray(categoriesRes.data)) {
-  //           categoriesData = categoriesRes.data;
-  //         }
-          
-  //         if (categoriesData.length > 0) {
-  //           console.log('[HomePage] ✅ Catégories chargées:', categoriesData.length);
-  //           console.log('[HomePage] Catégories:', categoriesData.map(c => ({ name: c.name, id: c.id })));
-  //           setCategories(categoriesData);
-  //         } else {
-  //           console.warn('[HomePage] Aucune catégorie trouvée');
-  //         }
-  //       } catch (error) {
-  //         console.error('[HomePage] ❌ Erreur chargement catégories:', error);
-  //       }
+          // Charger l'image du hero
+          if (firstVideo.thumbnailUrl) {
+            try {
+              const token = localStorage.getItem('token');
+              if (token) {
+                const url = catalogueService.getThumbnailUrl(firstVideo.thumbnailUrl);
+                const response = await fetch(url, {
+                  headers: {
+                    'Authorization': `Bearer ${token}`
+                  }
+                });
+                if (response.ok) {
+                  const blob = await response.blob();
+                  const objectUrl = URL.createObjectURL(blob);
+                  setHeroImageUrl(objectUrl);
+                }
+              }
+            } catch (err) {
+              console.error('[HomePage] Erreur chargement image hero:', err);
+            }
+          }
+        }
         
-  //       // 3. Définir la vidéo hero
-  //       if (videos && videos.length > 0) {
-  //         setHeroVideo(videos[0]);
-  //       } else {
-  //         console.error('[HomePage] ❌ Aucune vidéo disponible');
-  //       }
+        // Charger les catégories
+        const categoriesRes = await catalogueService.getCategories();
+        if (categoriesRes?.data?.data && Array.isArray(categoriesRes.data.data)) {
+          setCategories(categoriesRes.data.data);
+          console.log('[HomePage] Catégories chargées:', categoriesRes.data.data.length);
+        }
         
-  //     } catch (err) {
-  //       console.error('[HomePage] ❌ Erreur générale:', err);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   init();
-  // }, [loadVideos]);
-
-  // Dans HomePage
-useEffect(() => {
-  const init = async () => {
-    setIsLoading(true);
+      } catch (err) {
+        console.error('[HomePage] ❌ Erreur:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
-    try {
-      console.log('[HomePage] Initialisation...');
-      
-      // Forcer le chargement des vidéos depuis l'API
-      const loadedVideos = await loadVideos();
-      console.log('[HomePage] Vidéos chargées:', loadedVideos?.length || 0);
-      
-      if (loadedVideos && loadedVideos.length > 0) {
-        console.log('[HomePage] Première vidéo:', {
-          title: loadedVideos[0].title,
-          categoryId: loadedVideos[0].categoryId
-        });
-        setHeroVideo(loadedVideos[0]);
+    init();
+    
+    // Nettoyer l'URL du hero au démontage
+    return () => {
+      if (heroImageUrl) {
+        URL.revokeObjectURL(heroImageUrl);
       }
-      
-      // Charger les catégories
-      const categoriesRes = await catalogueService.getCategories();
-      if (categoriesRes?.data?.data && Array.isArray(categoriesRes.data.data)) {
-        setCategories(categoriesRes.data.data);
-        console.log('[HomePage] Catégories chargées:', categoriesRes.data.data.length);
-      }
-      
-    } catch (err) {
-      console.error('[HomePage] ❌ Erreur:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  init();
-}, [loadVideos]);
+    };
+  }, [loadVideos]);
+
   if (isLoading || !heroVideo) {
     return (
       <div style={{ paddingTop: 56 }}>
@@ -140,11 +185,39 @@ useEffect(() => {
       <div style={{
         minHeight: 320, height: '50vh', maxHeight: 420,
         position: "relative", overflow: "hidden",
-        background: getCoverGradient(heroVideo.title),
       }}>
+        {/* Image de fond */}
+        {heroImageUrl ? (
+          <img
+            src={heroImageUrl}
+            alt={heroVideo.title}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              zIndex: 0,
+            }}
+          />
+        ) : (
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: getCoverGradient(heroVideo.title),
+            zIndex: 0,
+          }} />
+        )}
+        
+        {/* Overlay sombre */}
         <div style={{
           position: "absolute", inset: 0,
-          background: "linear-gradient(to top, rgba(10,10,14,1) 0%, rgba(10,10,14,0.4) 50%, rgba(10,10,14,0.2) 100%)",
+          background: "linear-gradient(to top, rgba(10,10,14,1) 0%, rgba(10,10,14,0.5) 50%, rgba(10,10,14,0.2) 100%)",
+          zIndex: 1,
         }} />
 
         <div className="hero-content" style={{
@@ -159,11 +232,13 @@ useEffect(() => {
           <h1 className="hero-title" style={{
             fontSize: 42, fontWeight: 800, color: TEXT_P,
             margin: "12px 0 8px", letterSpacing: -1.5,
+            textShadow: "0 2px 8px rgba(0,0,0,0.5)",
           }}>{heroVideo.title}</h1>
 
           <p style={{
             fontSize: 14, color: TEXT_S,
             margin: "0 0 20px", maxWidth: 550,
+            textShadow: "0 1px 4px rgba(0,0,0,0.3)",
           }}>{heroVideo.description}</p>
 
           <div className="hero-buttons" style={{
@@ -195,7 +270,7 @@ useEffect(() => {
               {isInList ? "Dans ma liste" : "Ma liste"}
             </button>
 
-            <span className="hero-meta" style={{ fontSize: 11, color: TEXT_S }}>
+            <span className="hero-meta" style={{ fontSize: 11, color: TEXT_S, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
               {heroVideo.genres?.join(" · ") || heroVideo.category?.name || heroVideo.category || ""} — {fmtDuration(heroVideo.duration)} — {heroVideo.rating || "N/A"}
             </span>
           </div>

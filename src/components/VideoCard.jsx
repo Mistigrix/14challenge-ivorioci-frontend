@@ -1,6 +1,9 @@
+// components/VideoCard.jsx
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useVideoStore } from "../store/useVideoStore";
 import { PlayIcon, StarIcon, CheckIcon } from "./Icons";
+import { catalogueService } from "../services/api";
 
 const CI_O = "#FF8C00";
 const CI_G = "#009E49";
@@ -16,10 +19,111 @@ export const getCoverGradient = (title) => {
 };
 
 export const fmtDuration = (secs) => {
+  if (!secs) return "0min";
   const h = Math.floor(secs / 3600);
   const m = Math.floor((secs % 3600) / 60);
   return h > 0 ? `${h}h${m > 0 ? ` ${m}min` : ""}` : `${m}min`;
 };
+
+// Composant pour charger la thumbnail
+function VideoThumbnail({ videoId, thumbnailUrl, title, onLoad }) {
+  const [imageUrl, setImageUrl] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadThumbnail = async () => {
+      if (!thumbnailUrl) {
+        setError(true);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError(true);
+          setIsLoading(false);
+          return;
+        }
+
+        const url = catalogueService.getThumbnailUrl(thumbnailUrl);
+        console.log('[VideoThumbnail] Chargement:', url);
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        setImageUrl(objectUrl);
+        if (onLoad) onLoad();
+        
+      } catch (err) {
+        console.error('[VideoThumbnail] ❌ Erreur:', err);
+        setError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadThumbnail();
+
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [thumbnailUrl]);
+
+  if (isLoading) {
+    return (
+      <div style={{
+        width: '100%', height: '100%',
+        background: getCoverGradient(title),
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <div style={{
+          width: 30, height: 30,
+          border: `2px solid ${CI_O}20`,
+          borderTop: `2px solid ${CI_O}`,
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+      </div>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <div style={{
+        width: '100%', height: '100%',
+        background: getCoverGradient(title),
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <span style={{ fontSize: 32 }}>🎬</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={title}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+      }}
+    />
+  );
+}
 
 export default function VideoCard({ video, size = "medium" }) {
   const navigate = useNavigate();
@@ -44,30 +148,39 @@ export default function VideoCard({ video, size = "medium" }) {
       <div
         style={{
           width: "100%", height: h, borderRadius: 12, overflow: "hidden",
-          background: getCoverGradient(video.title), position: "relative",
+          position: "relative",
           marginBottom: 10, transition: "all 0.3s",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "scale(1.03)";
           e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.4)";
-          e.currentTarget.querySelector(".play-overlay").style.opacity = "1";
+          const overlay = e.currentTarget.querySelector(".play-overlay");
+          if (overlay) overlay.style.opacity = "1";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "scale(1)";
           e.currentTarget.style.boxShadow = "none";
-          e.currentTarget.querySelector(".play-overlay").style.opacity = "0";
+          const overlay = e.currentTarget.querySelector(".play-overlay");
+          if (overlay) overlay.style.opacity = "0";
         }}>
+
+        {/* Image de fond */}
+        <VideoThumbnail
+          videoId={video.id}
+          thumbnailUrl={video.thumbnailUrl}
+          title={video.title}
+        />
 
         {/* ——— Play overlay ——— */}
         <div className="play-overlay" style={{
           position: "absolute", inset: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
-          background: "rgba(0,0,0,0.3)", opacity: 0,
+          background: "rgba(0,0,0,0.5)", opacity: 0,
           transition: "opacity 0.3s", zIndex: 3,
         }}>
           <div style={{
             width: 48, height: 48, borderRadius: "50%",
-            background: "rgba(255,255,255,0.9)",
+            background: "rgba(255,255,255,0.95)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <PlayIcon size={20} color="#0A0A0E" />
@@ -75,13 +188,15 @@ export default function VideoCard({ video, size = "medium" }) {
         </div>
 
         {/* ——— Rating ——— */}
-        <span style={{
-          position: "absolute", top: 8, left: 8, zIndex: 2,
-          background: video.rating === "16+" ? "#E74C3C"
-            : video.rating === "12+" ? CI_O : CI_G,
-          borderRadius: 4, padding: "2px 6px",
-          fontSize: 9, color: "#FFF", fontWeight: 600,
-        }}>{video.rating}</span>
+        {video.rating && (
+          <span style={{
+            position: "absolute", top: 8, left: 8, zIndex: 2,
+            background: video.rating === "16+" ? "#E74C3C"
+              : video.rating === "12+" ? CI_O : CI_G,
+            borderRadius: 4, padding: "2px 6px",
+            fontSize: 9, color: "#FFF", fontWeight: 600,
+          }}>{video.rating}</span>
+        )}
 
         {/* ——— Badge vu ——— */}
         {prog === 100 && (
@@ -99,7 +214,7 @@ export default function VideoCard({ video, size = "medium" }) {
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0,
           height: "65%",
-          background: "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.7) 40%, transparent 100%)",
+          background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 40%, transparent 100%)",
           borderRadius: "0 0 12px 12px",
           pointerEvents: "none", zIndex: 1,
         }} />
@@ -108,7 +223,7 @@ export default function VideoCard({ video, size = "medium" }) {
         {prog > 0 && prog < 100 && (
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
-            height: 3, background: "rgba(255,255,255,0.2)", zIndex: 2,
+            height: 3, background: "rgba(255,255,255,0.3)", zIndex: 2,
           }}>
             <div style={{
               height: "100%", width: `${prog}%`,
@@ -120,10 +235,9 @@ export default function VideoCard({ video, size = "medium" }) {
         {/* ——— Durée ——— */}
         <span style={{
           position: "absolute", bottom: 8, right: 8, zIndex: 2,
-          background: "rgba(255,255,255,0.15)",
+          background: "rgba(0,0,0,0.7)",
           backdropFilter: "blur(4px)",
           WebkitBackdropFilter: "blur(4px)",
-          border: "1px solid rgba(255,255,255,0.25)",
           borderRadius: 4, padding: "2px 6px",
           fontSize: 10, color: "#FFF", fontWeight: 600,
         }}>{fmtDuration(video.duration)}</span>
@@ -135,14 +249,13 @@ export default function VideoCard({ video, size = "medium" }) {
           left: 8, right: 48, zIndex: 2,
         }}>
           <p style={{
-            fontSize: size === "large" ? 16 : 13,
-            fontWeight: 800, color: "#FFFFFF", margin: 0,
+            fontSize: size === "large" ? 14 : 12,
+            fontWeight: 700, color: "#FFFFFF", margin: 0,
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-            letterSpacing: 0.2,
-            background: "rgba(0,0,0,0.55)",
+            background: "rgba(0,0,0,0.6)",
             backdropFilter: "blur(2px)",
             WebkitBackdropFilter: "blur(2px)",
-            padding: "2px 6px", borderRadius: 4,
+            padding: "2px 8px", borderRadius: 4,
             display: "inline-block", maxWidth: "100%",
           }}>{video.title}</p>
         </div>
@@ -160,10 +273,10 @@ export default function VideoCard({ video, size = "medium" }) {
             whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>{video.title}</p>
           <p style={{ fontSize: 11, color: TEXT_S, margin: "0 0 4px" }}>
-            {video.genres.join(" · ")}
+            {video.genres?.join(" · ") || video.categoryName || "Non catégorisé"}
           </p>
           <p style={{ fontSize: 10, color: TEXT_DIM, margin: 0 }}>
-            {video.releaseDate}
+            {video.releaseDate || new Date(video.createdAt).getFullYear()}
           </p>
         </div>
         <button
@@ -175,6 +288,13 @@ export default function VideoCard({ video, size = "medium" }) {
           <StarIcon size={18} color={isInList ? CI_O : TEXT_DIM} filled={isInList} />
         </button>
       </div>
+
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
