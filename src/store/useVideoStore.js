@@ -1,37 +1,98 @@
+// store/useVideoStore.js
 import { create } from 'zustand';
-import { videos } from '../data/mockData';
-import { useToastStore } from '../components/Toast';
+import { catalogueService } from '../services/api';
+import { mapApiVideos } from '../utils/mapVideo';
 
 export const useVideoStore = create((set, get) => ({
-  videos,
-  watchList: [2, 6, 10],
-  watchHistory: [
-    { videoId: 1, watchedDuration: 3200, percentage: 59 },
-    { videoId: 3, watchedDuration: 5700, percentage: 100 },
-    { videoId: 5, watchedDuration: 900,  percentage: 50  },
-    { videoId: 9, watchedDuration: 600,  percentage: 25  },
-  ],
+  videos: [], // ← NE PAS utiliser les mocks au démarrage
+  watchList: [], // ← Initialiser vide
+  watchHistory: [], // ← Initialiser vide
   selectedGenreFilter: 'Tous',
+  isLoadingVideos: false,
+  totalVideos: 0,
+  currentPage: 1,
 
-  toggleWatchList: (videoId) => {
-    const isInList = get().watchList.includes(videoId);
-    const video = get().videos.find(v => v.id === videoId);
-    const title = video ? video.title : 'Vidéo';
+  // ——— Charge les vidéos depuis l'API ———
+  loadVideos: async (params = {}) => {
+    set({ isLoadingVideos: true });
+    try {
+      console.log('[VideoStore] Chargement vidéos...');
+      const res = await catalogueService.getVideos(params);
 
-    set((state) => ({
-      watchList: isInList
-        ? state.watchList.filter(id => id !== videoId)
-        : [...state.watchList, videoId],
-    }));
-
-    // Notification toast
-    const { showToast } = useToastStore.getState();
-    if (isInList) {
-      showToast(`${title} retiré de ma liste`, 'info');
-    } else {
-      showToast(`${title} ajouté à ma liste`, 'success');
+      console.log('[VideoStore] Réponse brute:', res);
+      
+      // Vérifier le format de la réponse
+      if (res?.data?.success && res.data.data) {
+        // Format: { success: true, data: { items: [...], total, page } }
+        const { items, total, page } = res.data.data;
+        
+        if (items && Array.isArray(items)) {
+          const mapped = mapApiVideos(items);
+          
+          console.log(`[VideoStore] ✅ ${mapped.length} vidéos chargées (total: ${total})`);
+          if (mapped.length > 0) {
+            console.log('[VideoStore] Première vidéo:', {
+              title: mapped[0].title,
+              id: mapped[0].id,
+              categoryId: mapped[0].categoryId,
+              category: mapped[0].category
+            });
+          }
+          
+          set({
+            videos: mapped,
+            totalVideos: total,
+            currentPage: page,
+            isLoadingVideos: false,
+          });
+          return mapped;
+        } else {
+          console.warn('[VideoStore] Aucun item dans la réponse');
+          set({ isLoadingVideos: false });
+          return [];
+        }
+      } else {
+        console.warn('[VideoStore] Format de réponse inattendu:', res);
+        set({ isLoadingVideos: false });
+        return [];
+      }
+    } catch (err) {
+      console.error('[VideoStore] ❌ Erreur:', err.message);
+      set({ isLoadingVideos: false });
+      return [];
     }
   },
+
+  // ——— Charge les vidéos d'une catégorie ———
+  loadCategoryVideos: async (categoryId, params = {}) => {
+    set({ isLoadingVideos: true });
+    try {
+      console.log(`[VideoStore] Chargement vidéos catégorie: ${categoryId}`);
+      const res = await catalogueService.getCategoryVideos(categoryId, params);
+
+      if (res?.data?.success && res.data.data) {
+        const { items, total } = res.data.data;
+        if (items && Array.isArray(items)) {
+          const mapped = mapApiVideos(items);
+          console.log(`[VideoStore] ✅ ${mapped.length} vidéos catégorie (total: ${total})`);
+          set({ videos: mapped, totalVideos: total, isLoadingVideos: false });
+          return mapped;
+        }
+      }
+      set({ isLoadingVideos: false });
+      return [];
+    } catch (err) {
+      console.error('[VideoStore] ❌ Erreur catégorie:', err.message);
+      set({ isLoadingVideos: false });
+      return [];
+    }
+  },
+
+  toggleWatchList: (videoId) => set((state) => ({
+    watchList: state.watchList.includes(videoId)
+      ? state.watchList.filter(id => id !== videoId)
+      : [...state.watchList, videoId],
+  })),
 
   setGenreFilter: (genre) => set({ selectedGenreFilter: genre }),
 
@@ -44,6 +105,6 @@ export const useVideoStore = create((set, get) => ({
 
   getSimilarVideos: (video) =>
     get().videos
-      .filter(v => v.id !== video.id && v.genres.some(g => video.genres.includes(g)))
+      .filter(v => v.id !== video.id && v.genres.some(g => video.genres?.includes(g)))
       .slice(0, 4),
 }));

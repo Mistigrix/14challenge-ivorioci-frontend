@@ -1,0 +1,50 @@
+/* ——— Variables thème sombre (défaut) ——— */
+:root {
+  --bg: #0A0A0E;
+  --surface: #131318;
+  --card: #1A1A22;
+  --card-hover: #22222C;
+  --border: #2A2A35;
+  --text-p: #F0EDE6;
+  --text-s: #777777;
+  --text-dim: #444444;
+  --input-bg: #111116;
+  --skeleton: #2A2A35;
+  --ci-orange: #FF8C00;
+  --ci-green: #009E49;
+}
+
+/* ——— Variables thème clair ——— */
+.light-theme {
+  --bg: #F5F3EE;
+  --surface: #FFFFFF;
+  --card: #FFFFFF;
+  --card-hover: #F0EDE6;
+  --border: #E0DDD8;
+  --text-p: #1A1A1A;
+  --text-s: #555555;
+  --text-dim: #999999;
+  --input-bg: #F0EDE6;
+  --skeleton: #E5E2DC;
+  --ci-orange: #FF8C00;
+  --ci-green: #009E49;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--bg);
+  color: var(--text-p);
+  font-family: 'DM Sans', sans-serif;
+  margin: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+button:hover { filter: brightness(1.08); }
+button:active { transform: scale(0.96); }
+input::placeholder { color: var(--text-dim); }
+select { outline: none; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,140,0,0.3); border-radius: 3px; }

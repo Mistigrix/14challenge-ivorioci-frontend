@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FlagBar from '../components/FlagBar';
-import { mockUsers } from '../data/mockData';
+import { authService } from '../services/api';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -9,7 +9,6 @@ const CARD = '#1A1A22';
 const BORDER = '#2A2A35';
 const TEXT_P = '#F0EDE6';
 const TEXT_S = '#777';
-const TEXT_DIM = '#444';
 const INPUT_BG = '#111116';
 
 export default function LoginPage() {
@@ -25,37 +24,36 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // Simulation délai réseau
-      await new Promise(resolve => setTimeout(resolve, 800));
+      console.log('[Login] Tentative connexion:', credentials.email);
 
-      // ——— Auth mock ———
-      // TODO: remplace par l'appel API réel
-      // const response = await api.post('/auth/login', credentials);
-      // localStorage.setItem('token', response.data.token);
+      const response = await authService.login(credentials);
 
-      const user = mockUsers.find(
-        u => u.email === credentials.email && u.password === credentials.password
-      );
+      console.log('[Login] Réponse:', response.data);
 
-      if (!user) {
-        setErrorMessage('Email ou mot de passe incorrect');
-        setIsLoading(false);
-        return;
+      if (response.data.success) {
+        const { accessToken, refreshToken } = response.data.data;
+
+        console.log('[Login] ✅ Connexion réussie');
+        console.log('[Login] accessToken:', accessToken.substring(0, 30) + '...');
+
+        // ——— Sauvegarde les tokens ———
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        navigate('/home');
       }
 
-      // Sauvegarde en localStorage
-      localStorage.setItem('user', JSON.stringify({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar,
-      }));
-      localStorage.setItem('token', `mock-token-${user.id}`);
-
-      navigate('/home');
-
     } catch (err) {
-      setErrorMessage('Une erreur est survenue, réessayez');
+      const status = err.response?.status;
+      const message = err.response?.data?.error?.message;
+
+      console.error('[Login] ❌ Erreur:', status, message);
+
+      if (status === 401) {
+        setErrorMessage(message || 'Email ou mot de passe incorrect');
+      } else {
+        setErrorMessage('Une erreur est survenue, réessayez');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,20 +84,6 @@ export default function LoginPage() {
           </h1>
           <p style={{ fontSize: 13, color: TEXT_S, margin: 0 }}>
             Connectez-vous à votre compte
-          </p>
-        </div>
-
-        {/* ——— Hint comptes de test ——— */}
-        <div style={{
-          padding: '10px 14px', borderRadius: 10, marginBottom: 20,
-          background: `${CI_G}10`, border: `1px solid ${CI_G}30`,
-          fontSize: 11, color: TEXT_S,
-        }}>
-          <p style={{ margin: '0 0 4px', color: CI_G, fontWeight: 600 }}>
-            💡 Comptes de test disponibles
-          </p>
-          <p style={{ margin: 0, color: TEXT_DIM }}>
-            demo@ivorioci.com / demo1234
           </p>
         </div>
 

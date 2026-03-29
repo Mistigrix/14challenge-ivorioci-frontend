@@ -53,31 +53,34 @@ api.interceptors.response.use(
 // ═══════════════════════════════════════════════
 export const authService = {
 
-  // POST /api/auth/register
+  // POST /auth/register
   register: (data) =>
-    api.post('/api/auth/register', {
+    api.post('/auth/register', {
       email: data.email,
       password: data.password,
-      username: data.name,
+      firstName: data.firstName,
+      lastName: data.lastName,
     }),
 
-  // POST /api/auth/login
+  // POST /auth/login
   login: (credentials) =>
-    api.post('/api/auth/login', credentials),
+    api.post('/auth/login', credentials),
 
-  // POST /api/auth/refresh
+  
+  // POST /auth/refresh
   refresh: () => {
-    const token = localStorage.getItem('token');
-    return api.post('/api/auth/refresh', { token });
+    const refreshToken = localStorage.getItem('refreshToken');
+    console.log('[Auth] Refresh avec token:', refreshToken?.substring(0, 30) + '...');
+    return api.post('/auth/refresh', { refreshToken });
   },
 
-  // GET /api/auth/me
-  me: () =>
-    api.get('/api/auth/me'),
+  // GET /auth/me
+  me: () => api.get('/auth/me'),
 
   // Déconnexion locale
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     window.location.href = '/login';
   },
@@ -86,29 +89,108 @@ export const authService = {
 // ═══════════════════════════════════════════════
 // ——— CATALOGUE SERVICE (Go) ———
 // ═══════════════════════════════════════════════
+// export const catalogueService = {
+
+//   // GET /api/videos?category=&genre=&search=&page=
+//   getVideos: (params = {}) =>
+//     api.get('/api/videos', { params }),
+
+//   // GET /api/videos/:id
+//   getVideoById: (id) =>
+//     api.get(`/api/videos/${id}`),
+
+//   // GET /api/videos/:id/similar
+//   getSimilarVideos: (id) =>
+//     api.get(`/api/videos/${id}/similar`),
+
+//   // GET /api/categories
+//   getCategories: () =>
+//     api.get('/api/categories'),
+
+//   // GET /api/genres
+//   getGenres: () =>
+//     api.get('/api/genres'),
+// };
+
 export const catalogueService = {
 
-  // GET /api/videos?category=&genre=&search=&page=
-  getVideos: (params = {}) =>
-    api.get('/api/videos', { params }),
-
-  // GET /api/videos/:id
-  getVideoById: (id) =>
-    api.get(`/api/videos/${id}`),
-
-  // GET /api/videos/:id/similar
-  getSimilarVideos: (id) =>
-    api.get(`/api/videos/${id}/similar`),
+  // ——— CATÉGORIES ———
 
   // GET /api/categories
-  getCategories: () =>
-    api.get('/api/categories'),
+  getCategories: () => {
+    console.log('[Catalogue] GET /api/categories');
+    return api.get('/api/categories');
+  },
+
+  // GET /api/categories/:id
+  getCategoryById: (categoryId) => {
+    console.log(`[Catalogue] GET /api/categories/${categoryId}`);
+    return api.get(`/api/categories/${categoryId}`);
+  },
+
+  // GET /api/categories/:id/videos
+  getCategoryVideos: (categoryId, params = {}) => {
+    console.log(`[Catalogue] GET /api/categories/${categoryId}/videos`, params);
+    return api.get(`/api/categories/${categoryId}/videos`, { params });
+  },
+
+  // ——— VIDÉOS ———
+
+  // GET /api/videos?page=1&limit=20&search=&categoryId=&sortBy=created_at&sortOrder=desc
+  getVideos: (params = {}) => {
+    const defaultParams = {
+      page: 1,
+      limit: 20,
+      search: '',
+      categoryId: '',
+      sortBy: 'created_at',
+      sortOrder: 'desc',
+      ...params,
+    };
+    console.log('[Catalogue] GET /api/videos', defaultParams);
+    return api.get('/api/videos', { params: defaultParams });
+  },
+
+  // GET /api/videos/:id
+  getVideoById: (id) => {
+    console.log(`[Catalogue] GET /api/videos/${id}`);
+    return api.get(`/api/videos/${id}`);
+  },
+
+  // GET /api/videos/:id/similar
+  getSimilarVideos: (id) => {
+    console.log(`[Catalogue] GET /api/videos/${id}/similar`);
+    return api.get(`/api/videos/${id}/similar`);
+  },
+
+  // ——— THUMBNAIL ———
+
+  // GET /api/thumbnails/:filename
+  // Retourne l'URL complète de la thumbnail
+  getThumbnailUrl: (thumbnailUrl) => {
+    if (!thumbnailUrl) return null;
+    // Si déjà une URL complète → retourne telle quelle
+    if (thumbnailUrl.startsWith('http')) return thumbnailUrl;
+    // Sinon construit l'URL
+    const base = import.meta.env.VITE_API_URL || 'https://api.ivorioci.chalenge14.com';
+    return `${base}/api/thumbnails/${thumbnailUrl}`;
+  },
+
+  // ——— STREAMING ———
+
+  // GET /api/stream/:videoId
+  // Retourne l'URL du stream directement utilisable dans un <video>
+  getStreamUrl: (videoId) => {
+    const base = import.meta.env.VITE_API_URL || 'https://api.ivorioci.chalenge14.com';
+    return `${base}/api/stream/${videoId}`;
+  },
 
   // GET /api/genres
-  getGenres: () =>
-    api.get('/api/genres'),
+  getGenres: () => {
+    console.log('[Catalogue] GET /api/genres');
+    return api.get('/api/genres');
+  },
 };
-
 // ═══════════════════════════════════════════════
 // ——— PROFILS SERVICE (Go) ———
 // ═══════════════════════════════════════════════

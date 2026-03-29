@@ -6,20 +6,46 @@ import VideoCard from './VideoCard';
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
 const TEXT_P = '#F0EDE6';
-const TEXT_DIM = '#444';
+const TEXT_DIM = '#444444';
+const TEXT_S = '#777777';
 const CARD = '#1A1A22';
 const BORDER = '#2A2A35';
-const TEXT_S = '#777';
 
 export default function RecommendationsRow() {
-  const { recommendations, trending, continueWatching, isLoading, generateRecommendations } =
-    useRecommendationStore();
-  const { watchHistory, watchList } = useVideoStore();
+  const {
+    recommendations, trending, continueWatching,
+    isLoading, generateRecommendations,
+  } = useRecommendationStore();
 
-  // ——— Génère les recommandations au montage ———
+  const { watchHistory, watchList, videos } = useVideoStore();
+
   useEffect(() => {
-    generateRecommendations(watchHistory, watchList);
-  }, [watchHistory, watchList]);
+    // Générer les recommandations uniquement si on a des vidéos et un historique
+    if (videos && videos.length > 0) {
+      console.log('[RecommendationsRow] Génération des recommandations...');
+      console.log('[RecommendationsRow] Vidéos disponibles:', videos.length);
+      console.log('[RecommendationsRow] Historique:', watchHistory.length);
+      console.log('[RecommendationsRow] Watchlist:', watchList.length);
+      
+      generateRecommendations(watchHistory, watchList);
+    }
+  }, [watchHistory, watchList, videos, generateRecommendations]);
+
+  // Si pas de vidéos du tout
+  if (!videos || videos.length === 0) {
+    return (
+      <div style={{
+        textAlign: 'center', padding: '40px 20px',
+        borderRadius: 16, background: CARD,
+        border: `1px solid ${BORDER}`, marginBottom: 36,
+      }}>
+        <span style={{ fontSize: 40, display: 'block', marginBottom: 12 }}>📺</span>
+        <p style={{ fontSize: 14, color: TEXT_S, margin: 0 }}>
+          Chargement des vidéos...
+        </p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -43,99 +69,72 @@ export default function RecommendationsRow() {
     );
   }
 
+  const SectionHeader = ({ icon, title, badge, badgeColor, count }) => (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between',
+      alignItems: 'center', marginBottom: 14,
+    }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: TEXT_P, margin: 0 }}>
+        <span style={{ marginRight: 8 }}>{icon}</span>
+        {title}
+        {badge && (
+          <span style={{
+            fontSize: 10, marginLeft: 10, padding: '3px 8px',
+            borderRadius: 6, background: `${badgeColor}15`, color: badgeColor,
+            fontWeight: 600, verticalAlign: 'middle',
+          }}>{badge}</span>
+        )}
+      </h2>
+      {count && (
+        <span style={{ fontSize: 11, color: TEXT_DIM }}>{count} vidéos</span>
+      )}
+    </div>
+  );
+
   return (
     <>
-
-      {/* ——— Recommandations personnalisées ——— */}
-      {recommendations.length > 0 && (
+      {/* ——— Recommandations ——— */}
+      {recommendations && recommendations.length > 0 && (
         <div style={{ marginBottom: 36 }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 14,
-          }}>
-            <h2 style={{
-              fontSize: 18, fontWeight: 700, color: TEXT_P, margin: 0,
-            }}>
-              <span style={{ marginRight: 8 }}>✨</span>
-              Recommandés pour vous
-              <span style={{
-                fontSize: 10, marginLeft: 10, padding: '3px 8px',
-                borderRadius: 6, background: `${CI_O}15`, color: CI_O,
-                fontWeight: 600, verticalAlign: 'middle',
-              }}>IA</span>
-            </h2>
-            <span style={{ fontSize: 11, color: TEXT_DIM }}>
-              {recommendations.length} vidéos
-            </span>
-          </div>
-          <div style={{
-            display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8,
-          }}>
-            {recommendations.map(v => (
-              <VideoCard key={v.id} video={v} />
-            ))}
+          <SectionHeader
+            icon="✨" title="Recommandés pour vous"
+            badge="IA" badgeColor={CI_O}
+            count={recommendations.length}
+          />
+          <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
+            {recommendations.map(v => <VideoCard key={v.id} video={v} />)}
           </div>
         </div>
       )}
 
       {/* ——— Reprendre le visionnage ——— */}
-      {continueWatching.length > 0 && (
+      {continueWatching && continueWatching.length > 0 && (
         <div style={{ marginBottom: 36 }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 14,
-          }}>
-            <h2 style={{
-              fontSize: 18, fontWeight: 700, color: TEXT_P, margin: 0,
-            }}>
-              <span style={{ marginRight: 8 }}>⏯️</span>
-              Reprendre le visionnage
-            </h2>
-          </div>
-          <div style={{
-            display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8,
-          }}>
-            {continueWatching.map(v => (
-              <VideoCard key={v.id} video={v} size="small" />
-            ))}
+          <SectionHeader icon="⏯️" title="Reprendre le visionnage" />
+          <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
+            {continueWatching.map(v => <VideoCard key={v.id} video={v} size="small" />)}
           </div>
         </div>
       )}
 
       {/* ——— Tendances ——— */}
-      {trending.length > 0 && (
+      {trending && trending.length > 0 && (
         <div style={{ marginBottom: 36 }}>
-          <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 14,
-          }}>
-            <h2 style={{
-              fontSize: 18, fontWeight: 700, color: TEXT_P, margin: 0,
-            }}>
-              <span style={{ marginRight: 8 }}>🔥</span>
-              Tendances
-              <span style={{
-                fontSize: 10, marginLeft: 10, padding: '3px 8px',
-                borderRadius: 6, background: `${CI_G}15`, color: CI_G,
-                fontWeight: 600, verticalAlign: 'middle',
-              }}>LIVE</span>
-            </h2>
-            <span style={{ fontSize: 11, color: TEXT_DIM }}>
-              {trending.length} vidéos
-            </span>
-          </div>
-          <div style={{
-            display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8,
-          }}>
-            {trending.map(v => (
-              <VideoCard key={v.id} video={v} />
-            ))}
+          <SectionHeader
+            icon="🔥" title="Tendances"
+            badge="LIVE" badgeColor={CI_G}
+            count={trending.length}
+          />
+          <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
+            {trending.map(v => <VideoCard key={v.id} video={v} />)}
           </div>
         </div>
       )}
 
-      {/* ——— Aucune recommandation ——— */}
-      {recommendations.length === 0 && continueWatching.length === 0 && (
+      {/* ——— Message si rien n'est affiché ——— */}
+      {(!recommendations || recommendations.length === 0) && 
+       (!continueWatching || continueWatching.length === 0) && 
+       (!trending || trending.length === 0) && (
         <div style={{
           textAlign: 'center', padding: '40px 20px',
           borderRadius: 16, background: CARD,
@@ -147,7 +146,6 @@ export default function RecommendationsRow() {
           </p>
         </div>
       )}
-
     </>
   );
 }

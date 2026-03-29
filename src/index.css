@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/**@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');*/ 
+/**@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');*/
 
 * { box-sizing: border-box; }
 
@@ -40,6 +40,28 @@ body {
   background: #FF8C0050;
 }
 
+/* ——— Input en mode light ——— */
+.light-theme input,
+.light-theme select,
+.light-theme textarea {
+  background: #F0EDE6 !important;
+  color: #1A1A22 !important;
+  border-color: #E0DDD6 !important;
+}
+
+/* ——— Dropdown recherche ——— */
+.light-theme .search-dropdown {
+  background: #FFFFFF !important;
+  border-color: #E0DDD6 !important;
+}
+
+/* ——— Bouton Ma liste hero ——— */
+.light-theme .btn-ghost {
+  color: #1A1A22 !important;
+  border-color: #E0DDD6 !important;
+  background: rgba(0,0,0,0.05) !important;
+}
+
 /* ——— Responsive utilitaires ——— */
 @media (max-width: 768px) {
   .nav-links-desktop { display: none !important; }
@@ -60,4 +82,3 @@ body {
   .search-dropdown { width: calc(100vw - 32px) !important; right: -60px !important; }
   .search-input-wrapper { width: 140px !important; }
 }
-

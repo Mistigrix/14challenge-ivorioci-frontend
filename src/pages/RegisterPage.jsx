@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import FlagBar from '../components/FlagBar';
+import { authService } from '../services/api';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -14,7 +15,10 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,20 +37,30 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      // TODO: remplace par ton appel API réel
-      // const response = await api.post('/auth/register', formData);
-      // localStorage.setItem('token', response.data.token);
+      const response = await authService.register(formData);
 
-      // Simulation pour l'instant
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      navigate('/');
+      if (response.data.success) {
+        const { accessToken, refreshToken } = response.data.data;
+
+        // Sauvegarde les tokens
+        localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+
+        navigate('/home');
+      }
 
     } catch (err) {
-      setErrorMessage(
-        err.response?.status === 409
-          ? 'Cet email est déjà utilisé'
-          : 'Une erreur est survenue, réessayez'
-      );
+      const status = err.response?.status;
+      const message = err.response?.data?.error?.message;
+
+      if (status === 409) {
+        setErrorMessage('Un compte avec cet email existe déjà');
+      } else if (status === 400) {
+        // Message de validation de l'API
+        setErrorMessage(message || 'Données invalides — vérifie les champs');
+      } else {
+        setErrorMessage('Une erreur est survenue, réessayez');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -102,23 +116,42 @@ export default function RegisterPage() {
         {/* ——— Formulaire ——— */}
         <form onSubmit={handleSubmit}>
 
-          {/* Nom */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{
-              fontSize: 11, color: TEXT_S, fontWeight: 500,
-              display: 'block', marginBottom: 6,
-              textTransform: 'uppercase', letterSpacing: 0.5,
-            }}>Nom complet</label>
-            <input
-              type="text"
-              placeholder="Kouame Aya"
-              value={formData.name}
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
-              required
-              style={inputStyle()}
-              onFocus={e => e.target.style.borderColor = CI_O}
-              onBlur={e => e.target.style.borderColor = BORDER}
-            />
+          {/* Prénom + Nom */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div>
+              <label style={{
+                fontSize: 11, color: TEXT_S, fontWeight: 500,
+                display: 'block', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: 0.5,
+              }}>Prénom</label>
+              <input
+                type="text"
+                placeholder="Jean"
+                value={formData.firstName}
+                onChange={e => setFormData({ ...formData, firstName: e.target.value })}
+                required
+                style={inputStyle()}
+                onFocus={e => e.target.style.borderColor = CI_O}
+                onBlur={e => e.target.style.borderColor = BORDER}
+              />
+            </div>
+            <div>
+              <label style={{
+                fontSize: 11, color: TEXT_S, fontWeight: 500,
+                display: 'block', marginBottom: 6,
+                textTransform: 'uppercase', letterSpacing: 0.5,
+              }}>Nom</label>
+              <input
+                type="text"
+                placeholder="Dupont"
+                value={formData.lastName}
+                onChange={e => setFormData({ ...formData, lastName: e.target.value })}
+                required
+                style={inputStyle()}
+                onFocus={e => e.target.style.borderColor = CI_O}
+                onBlur={e => e.target.style.borderColor = BORDER}
+              />
+            </div>
           </div>
 
           {/* Email */}

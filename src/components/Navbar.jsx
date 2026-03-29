@@ -1,9 +1,9 @@
-import { useState } from 'react';
+// components/Navbar.jsx
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { profiles } from '../data/mockData';
+import { profileService } from '../services/api';
 import SearchBar from './SearchBar';
 import { MenuIcon, CloseIcon } from './Icons';
-import ThemeToggle from './ThemeToggle';
 
 const CI_O = '#FF8C00';
 const CI_G = '#009E49';
@@ -27,9 +27,91 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [currentProfile, setCurrentProfile] = useState(profiles[0]);
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [profiles, setProfiles] = useState([]);
   const [showProfilePicker, setShowProfilePicker] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // ——— Charger les profils depuis l'API ———
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('[Navbar] Non authentifié');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('[Navbar] Chargement des profils...');
+        const response = await profileService.getAll();
+        
+        if (response.data.success && response.data.data) {
+          const profilesData = response.data.data;
+          console.log('[Navbar] ✅ Profils chargés:', profilesData.length);
+          setProfiles(profilesData);
+          
+          // Sélectionner le premier profil par défaut
+          if (profilesData.length > 0 && !currentProfile) {
+            setCurrentProfile(profilesData[0]);
+          }
+        }
+      } catch (error) {
+        console.error('[Navbar] ❌ Erreur chargement profils:', error);
+        // Fallback avec profil par défaut
+        setCurrentProfile({
+          id: 'default',
+          name: 'Utilisateur',
+          avatar: '👤',
+          isKid: false
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfiles();
+  }, []);
+
+  // ——— Changer de profil ———
+  const handleSwitchProfile = async (profile) => {
+    try {
+      console.log('[Navbar] Changement de profil:', profile.name);
+      
+      // Appel API pour changer de profil
+      const response = await profileService.switchProfile(profile.id);
+      
+      if (response.data.success) {
+        setCurrentProfile(profile);
+        setShowProfilePicker(false);
+        console.log('[Navbar] ✅ Profil changé avec succès');
+        
+        // Recharger la page pour mettre à jour le contenu
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('[Navbar] ❌ Erreur changement profil:', error);
+      // Fallback local
+      setCurrentProfile(profile);
+      setShowProfilePicker(false);
+    }
+  };
+
+  // ——— Déconnexion ———
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  // ——— Obtenir l'icône du profil ———
+  const getProfileAvatar = (profile) => {
+    if (!profile) return '👤';
+    if (profile.avatar) return profile.avatar;
+    return profile.name?.charAt(0).toUpperCase() || '👤';
+  };
 
   const navLinks = [
     { path: '/home',      label: 'Accueil'   },
@@ -37,6 +119,31 @@ export default function Navbar() {
     { path: '/watchlist', label: 'Ma liste'  },
     { path: '/about',     label: 'À propos'  },
   ];
+
+  if (isLoading) {
+    return (
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+        padding: '0 16px', height: 56,
+        background: 'rgba(10,10,14,0.92)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: `1px solid ${BORDER}`,
+      }}>
+        <div style={{
+          maxWidth: 1200, margin: '0 auto',
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', height: '100%',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <FlagBar />
+            <span style={{ fontSize: 18, fontWeight: 800, color: TEXT_P }}>
+              Ivorio<span style={{ color: CI_O }}>CI</span>
+            </span>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <>
@@ -54,7 +161,7 @@ export default function Navbar() {
           alignItems: 'center', height: '100%', position: 'relative',
         }}>
 
-          {/* ——— Logo (gauche) ——— */}
+          {/* ——— Logo ——— */}
           <div
             style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}
             onClick={() => navigate('/home')}>
@@ -90,11 +197,8 @@ export default function Navbar() {
           {/* ——— Droite ——— */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
-            {/* ——— SearchBar toujours visible ——— */}
+            {/* ——— SearchBar ——— */}
             <SearchBar />
-
-            {/* ——— Toggle theme sombre/clair ——— */}
-            <ThemeToggle />
 
             {/* ——— Profil ——— */}
             <div style={{ position: 'relative' }}>
@@ -104,64 +208,95 @@ export default function Navbar() {
                   width: 34, height: 34, borderRadius: 8, cursor: 'pointer',
                   background: `linear-gradient(135deg, ${CI_O}, ${CI_G})`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#FFF', fontSize: 12, fontWeight: 700,
+                  color: '#FFF', fontSize: 14, fontWeight: 700,
                   border: `2px solid ${showProfilePicker ? CI_O : 'transparent'}`,
                   transition: 'all 0.2s',
                 }}>
-                {currentProfile.avatar}
+                {currentProfile ? getProfileAvatar(currentProfile) : '👤'}
               </div>
 
-              {/* Dropdown profils */}
+              {/* ——— Dropdown profils ——— */}
               {showProfilePicker && (
                 <div style={{
                   position: 'absolute', top: '100%', right: 0, marginTop: 8,
                   background: CARD, borderRadius: 14,
                   border: `1px solid ${BORDER}`,
-                  padding: 12, minWidth: 180,
+                  padding: 12, minWidth: 200,
                   boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   zIndex: 9999,
                 }}>
                   <p style={{
                     fontSize: 10, color: TEXT_DIM, margin: '0 0 8px',
                     textTransform: 'uppercase', letterSpacing: 1,
-                  }}>Profils</p>
-                  {profiles.map(p => (
-                    <div
-                      key={p.id}
-                      onClick={() => { setCurrentProfile(p); setShowProfilePicker(false); }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
-                        background: currentProfile.id === p.id ? `${CI_O}15` : 'transparent',
-                        transition: 'all 0.2s', marginBottom: 2,
-                      }}
-                      onMouseEnter={e => {
-                        if (currentProfile.id !== p.id)
-                          e.currentTarget.style.background = CARD_HOVER;
-                      }}
-                      onMouseLeave={e => {
-                        if (currentProfile.id !== p.id)
-                          e.currentTarget.style.background = 'transparent';
-                      }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: 6,
-                        background: currentProfile.id === p.id
-                          ? `linear-gradient(135deg, ${CI_O}, ${CI_G})`
-                          : SURFACE,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: currentProfile.id === p.id ? '#FFF' : TEXT_S,
-                        fontSize: 10, fontWeight: 700,
-                      }}>{p.avatar}</div>
-                      <div>
-                        <p style={{
-                          fontSize: 12, fontWeight: 600, color: TEXT_P, margin: 0,
-                        }}>{p.name}</p>
-                        {p.isKid && (
-                          <span style={{ fontSize: 9, color: CI_G }}>Enfant</span>
-                        )}
+                  }}>Mes profils</p>
+                  
+                  {profiles.length > 0 ? (
+                    profiles.map(p => (
+                      <div
+                        key={p.id}
+                        onClick={() => handleSwitchProfile(p)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                          background: currentProfile?.id === p.id ? `${CI_O}15` : 'transparent',
+                          transition: 'all 0.2s', marginBottom: 2,
+                        }}
+                        onMouseEnter={e => {
+                          if (currentProfile?.id !== p.id)
+                            e.currentTarget.style.background = CARD_HOVER;
+                        }}
+                        onMouseLeave={e => {
+                          if (currentProfile?.id !== p.id)
+                            e.currentTarget.style.background = 'transparent';
+                        }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          background: currentProfile?.id === p.id
+                            ? `linear-gradient(135deg, ${CI_O}, ${CI_G})`
+                            : SURFACE,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: currentProfile?.id === p.id ? '#FFF' : TEXT_S,
+                          fontSize: 14, fontWeight: 700,
+                        }}>{getProfileAvatar(p)}</div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{
+                            fontSize: 13, fontWeight: 600, color: TEXT_P, margin: 0,
+                          }}>{p.name}</p>
+                          {p.isKid && (
+                            <span style={{ fontSize: 9, color: CI_G }}>Mode enfant</span>
+                          )}
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '8px 10px', color: TEXT_S, fontSize: 12 }}>
+                      Aucun profil
                     </div>
-                  ))}
+                  )}
+                  
+                  <div style={{
+                    borderTop: `1px solid ${BORDER}`,
+                    marginTop: 8, paddingTop: 8,
+                  }}>
+                    <button
+                      onClick={handleLogout}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: 'transparent',
+                        color: '#ff6b6b',
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      🚪 Se déconnecter
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -178,13 +313,16 @@ export default function Navbar() {
                 borderRadius: 8, cursor: 'pointer',
                 alignItems: 'center', justifyContent: 'center',
               }}>
-              {menuOpen ? <CloseIcon size={18} color={TEXT_P} /> : <MenuIcon size={18} color={TEXT_P} />}
+              {menuOpen
+                ? <CloseIcon size={18} color={TEXT_P} />
+                : <MenuIcon size={18} color={TEXT_P} />
+              }
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ——— Menu mobile (sans SearchBar) ——— */}
+      {/* ——— Menu mobile ——— */}
       {menuOpen && (
         <div style={{
           position: 'fixed', top: 56, left: 0, right: 0, zIndex: 999,
@@ -207,6 +345,24 @@ export default function Navbar() {
               {n.label}
             </Link>
           ))}
+          <button
+            onClick={() => {
+              handleLogout();
+              setMenuOpen(false);
+            }}
+            style={{
+              marginTop: 8,
+              padding: '12px 8px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'transparent',
+              color: '#ff6b6b',
+              fontSize: 14,
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}>
+            🚪 Se déconnecter
+          </button>
         </div>
       )}
     </>

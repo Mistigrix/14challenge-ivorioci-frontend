@@ -1,38 +1,145 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useVideoStore } from "../store/useVideoStore";
-import { categoriesData } from "../data/mockData";
 import RecommendationsRow from "../components/RecommendationsRow";
-import VideoCard, { getCoverGradient, fmtDuration } from "../components/VideoCard";
+import { getCoverGradient, fmtDuration } from "../components/VideoCard";
 import CategoryRow from "../components/CategoryRow";
-import SkeletonCard from "../components/SkeletonCard";
 import { PlayIcon, StarIcon } from "../components/Icons";
-import { videos } from "../data/mockData";
+import { catalogueService } from "../services/api";
 
 const CI_O = "#FF8C00";
 const TEXT_P = "#F0EDE6";
-const TEXT_S = "#777";
+const TEXT_S = "#777777";
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const { watchList, toggleWatchList } = useVideoStore();
+  const { watchList, toggleWatchList, videos: storeVideos, loadVideos } = useVideoStore();
+
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [heroVideo, setHeroVideo] = useState(null);
 
-  const heroVideo = videos[0];
-  const isInList = watchList.includes(heroVideo.id);
+  const isInList = heroVideo ? watchList.includes(heroVideo.id) : false;
 
-  // Simule un court chargement pour montrer les skeletons
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600);
-    return () => clearTimeout(timer);
-  }, []);
+  // useEffect(() => {
+  //   const init = async () => {
+  //     setIsLoading(true);
+      
+  //     try {
+  //       console.log('[HomePage] Initialisation...');
+        
+  //       // 1. Charger les vidéos via le store
+  //       let videos = storeVideos;
+  //       if (!videos || videos.length === 0) {
+  //         console.log('[HomePage] Chargement des vidéos via le store...');
+  //         await loadVideos();
+  //         videos = useVideoStore.getState().videos;
+  //       }
+        
+  //       console.log('[HomePage] Vidéos disponibles:', videos?.length || 0);
+  //       if (videos && videos.length > 0) {
+  //         console.log('[HomePage] Première vidéo:', videos[0].title);
+  //         console.log('[HomePage] categoryId de la première vidéo:', videos[0].categoryId);
+  //       }
+        
+  //       // 2. Charger les catégories depuis l'API
+  //       try {
+  //         const categoriesRes = await catalogueService.getCategories();
+          
+  //         // Extraire les catégories du format {success: true, data: [...]}
+  //         let categoriesData = [];
+  //         if (categoriesRes?.data?.data && Array.isArray(categoriesRes.data.data)) {
+  //           categoriesData = categoriesRes.data.data;
+  //         } else if (categoriesRes?.data && Array.isArray(categoriesRes.data)) {
+  //           categoriesData = categoriesRes.data;
+  //         }
+          
+  //         if (categoriesData.length > 0) {
+  //           console.log('[HomePage] ✅ Catégories chargées:', categoriesData.length);
+  //           console.log('[HomePage] Catégories:', categoriesData.map(c => ({ name: c.name, id: c.id })));
+  //           setCategories(categoriesData);
+  //         } else {
+  //           console.warn('[HomePage] Aucune catégorie trouvée');
+  //         }
+  //       } catch (error) {
+  //         console.error('[HomePage] ❌ Erreur chargement catégories:', error);
+  //       }
+        
+  //       // 3. Définir la vidéo hero
+  //       if (videos && videos.length > 0) {
+  //         setHeroVideo(videos[0]);
+  //       } else {
+  //         console.error('[HomePage] ❌ Aucune vidéo disponible');
+  //       }
+        
+  //     } catch (err) {
+  //       console.error('[HomePage] ❌ Erreur générale:', err);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
+
+  //   init();
+  // }, [loadVideos]);
+
+  // Dans HomePage
+useEffect(() => {
+  const init = async () => {
+    setIsLoading(true);
+    
+    try {
+      console.log('[HomePage] Initialisation...');
+      
+      // Forcer le chargement des vidéos depuis l'API
+      const loadedVideos = await loadVideos();
+      console.log('[HomePage] Vidéos chargées:', loadedVideos?.length || 0);
+      
+      if (loadedVideos && loadedVideos.length > 0) {
+        console.log('[HomePage] Première vidéo:', {
+          title: loadedVideos[0].title,
+          categoryId: loadedVideos[0].categoryId
+        });
+        setHeroVideo(loadedVideos[0]);
+      }
+      
+      // Charger les catégories
+      const categoriesRes = await catalogueService.getCategories();
+      if (categoriesRes?.data?.data && Array.isArray(categoriesRes.data.data)) {
+        setCategories(categoriesRes.data.data);
+        console.log('[HomePage] Catégories chargées:', categoriesRes.data.data.length);
+      }
+      
+    } catch (err) {
+      console.error('[HomePage] ❌ Erreur:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  init();
+}, [loadVideos]);
+  if (isLoading || !heroVideo) {
+    return (
+      <div style={{ paddingTop: 56 }}>
+        <div style={{ 
+          minHeight: 320, 
+          background: "#0A0A0E",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <div style={{ color: TEXT_P }}>Chargement...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ paddingTop: 56 }}>
-
-      {/* ——— Hero Banner ——— */}
+      {/* Hero Banner */}
       <div style={{
-        minHeight: 320, height: '50vh', maxHeight: 420, position: "relative", overflow: "hidden",
+        minHeight: 320, height: '50vh', maxHeight: 420,
+        position: "relative", overflow: "hidden",
         background: getCoverGradient(heroVideo.title),
       }}>
         <div style={{
@@ -55,10 +162,13 @@ export default function HomePage() {
           }}>{heroVideo.title}</h1>
 
           <p style={{
-            fontSize: 14, color: TEXT_S, margin: "0 0 20px", maxWidth: 550,
+            fontSize: 14, color: TEXT_S,
+            margin: "0 0 20px", maxWidth: 550,
           }}>{heroVideo.description}</p>
 
-          <div className="hero-buttons" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div className="hero-buttons" style={{
+            display: "flex", gap: 12, alignItems: "center",
+          }}>
             <button
               onClick={() => navigate(`/player/${heroVideo.id}`)}
               style={{
@@ -68,7 +178,9 @@ export default function HomePage() {
                 background: `linear-gradient(135deg, ${CI_O}, #FFa040)`,
                 color: "#FFF", fontSize: 14, fontWeight: 600,
                 boxShadow: `0 4px 16px ${CI_O}40`,
-              }}><PlayIcon size={14} color="#FFF" /> Lecture</button>
+              }}>
+              <PlayIcon size={14} color="#FFF" /> Lecture
+            </button>
 
             <button
               onClick={() => toggleWatchList(heroVideo.id)}
@@ -84,35 +196,31 @@ export default function HomePage() {
             </button>
 
             <span className="hero-meta" style={{ fontSize: 11, color: TEXT_S }}>
-              {heroVideo.genres.join(" · ")} — {fmtDuration(heroVideo.duration)} — {heroVideo.rating}
+              {heroVideo.genres?.join(" · ") || heroVideo.category?.name || heroVideo.category || ""} — {fmtDuration(heroVideo.duration)} — {heroVideo.rating || "N/A"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* ——— Recommandations + Reprendre + Tendances ——— */}
-      <div className="page-container" style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 32px 0" }}>
+      {/* Recommendations */}
+      <div className="page-container" style={{
+        maxWidth: 1200, margin: "0 auto", padding: "32px 32px 0",
+      }}>
         <RecommendationsRow />
       </div>
 
-      {/* ——— Catégories ——— */}
-      <div className="page-container" style={{ maxWidth: 1200, margin: "0 auto", padding: "0 32px 40px" }}>
-        {isLoading ? (
-          // Skeleton loading pendant le chargement
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 8 }}>
-              {[1, 2, 3, 4, 5].map(i => (
-                <SkeletonCard key={i} />
-              ))}
-            </div>
-          </div>
+      {/* Catégories */}
+      <div className="page-container" style={{
+        maxWidth: 1200, margin: "0 auto", padding: "0 32px 40px",
+      }}>
+        {categories.length > 0 ? (
+          categories.map(c => <CategoryRow key={c.id} category={c} />)
         ) : (
-          categoriesData.map((c) => (
-            <CategoryRow key={c.id} category={c} />
-          ))
+          <div style={{ color: TEXT_S, textAlign: 'center', padding: '40px' }}>
+            Chargement des catégories...
+          </div>
         )}
       </div>
-
     </div>
   );
 }
